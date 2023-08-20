@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'jenkins-agent'
-    }
+    agent any
     stages {
         stage('Check Files') {
             steps {
