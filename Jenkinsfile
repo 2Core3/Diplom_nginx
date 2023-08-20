@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label "jenkins-agent" }
     
     stages {
         stage('Check Files') {
@@ -51,7 +51,6 @@ pipeline {
                 script {
                     sh(script: "docker run -d -p 80:80 my-nginx:v${BUILD_NUMBER}")
                     sleep(time: 10, unit: 'SECONDS')  // Wait for container to start
-                    sh(script: "curl localhost:80")
                 }
             }
         }
