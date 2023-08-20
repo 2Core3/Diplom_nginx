@@ -12,7 +12,11 @@ pipeline {
         stage('Build') {
             steps {
                 script {
+<<<<<<< HEAD
                     echo "BRANCH - ${env.BRANCH_NAME}"
+=======
+                    println("BRANCH - ${env.BRANCH_NAME}") 
+>>>>>>> 59e90021710fa3fd989d61ebb4471e7b61596fae
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker build -t ${dockerBuildTag} ."
                 }
