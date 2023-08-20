@@ -1,55 +1,44 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_REPO = "1core2"
+        DOCKER_IMAGE_NAME = "nginx"
+        DOCKER_TAG = "v${BUILD_NUMBER}"
+        DOCKER_IMAGE = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+    }
+
     stages {
-        stage('Check Files') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    def requiredFiles = ['Dockerfile', 'index.html', 'script_dockerhub.sh', 'test.sh']
-                    def missingFiles = []
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
 
-                    for (file in requiredFiles) {
-                        if (!fileExists(file)) {
-                            missingFiles.add(file)
-                        }
-                    }
-
-                    if (!missingFiles.isEmpty()) {
-                        error "Missing required files: ${missingFiles.join(', ')}"
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "docker login --username ${DOCKER_USERNAME} --password-stdin"
                     }
                 }
             }
         }
 
-        stage('Run DockerHub Script') {
+        stage('Tag Docker Image') {
             steps {
                 script {
-                    def scriptOutput = sh(script: './script_dockerhub.sh', returnStatus: true).trim()
-                    if (scriptOutput != 'ok') {
-                        error "Script script_dockerhub.sh failed with output: ${scriptOutput}"
-                    }
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${DOCKER_IMAGE}"
                 }
             }
         }
 
-        stage('Run Test Script') {
-            steps {
-                sh './test.sh'
-            }
-        }
-
-        stage('Build and Deploy Docker Image') {
+        stage('Push to Docker Repository') {
             steps {
                 script {
-                    def version = sh(script: 'echo $BUILD_NUMBER', returnStdout: true).trim()
-                    def imageName = "my-nginx:v${version}"
-
-                    sh "docker build -t ${imageName} ."
-                    sh "docker save -o ${imageName}.tar ${imageName}"
-                    sshagent(credentials: ['vagrant-ssh-credentials-id']) {
-                        sh "scp -o StrictHostKeyChecking=no ${imageName}.tar vagrant@192.168.56.106:/home/vagrant/"
-                        sh "sshpass -p 'vagrant' ssh vagrant@192.168.56.106 'docker load -i /home/vagrant/${imageName}.tar'"
-                    }
+                    sh "docker push ${DOCKER_IMAGE}"
                 }
             }
         }
