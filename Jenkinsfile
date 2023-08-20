@@ -13,7 +13,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    println("BRANCH - ${env.BRANCH_NAME}") 
+                    echo $GIT_BRANCH
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker build -t ${dockerBuildTag} ."
                 }
@@ -23,6 +23,7 @@ pipeline {
         stage('Tag') {
             steps {
                 script {
+                    echo $GIT_BRANCH
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG} ${dockerTargetTag}"
                 }
