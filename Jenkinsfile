@@ -55,7 +55,7 @@ pipeline {
         
         stage('Push') {
             when {
-                expression { env.BRANCH_NAME == 'test' }
+                expression { env.BRANCH_NAME == 'main' }
             }
             steps {
                 script {
