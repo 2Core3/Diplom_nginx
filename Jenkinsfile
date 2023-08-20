@@ -53,6 +53,9 @@ pipeline {
         }
         
         stage('Push') {
+            when {
+                expression { BRANCH_NAME == 'main' }
+            }
             steps {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
