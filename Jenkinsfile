@@ -5,15 +5,16 @@ pipeline {
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
+        DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
     }
     
     stages {
         stage('Build') {
             steps {
                 script {
-                    def dockerBuildTag = "nginx:v${BUILD_NUMBER}"
+                    def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${dockerBuildTag} ."
+                    sh "docker build -t ${dockerBuildTag} ."
                 }
             }
         }
@@ -21,10 +22,9 @@ pipeline {
         stage('Tag') {
             steps {
                 script {
-                    def dockerBuildTag = "nginx:v${BUILD_NUMBER}"
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${dockerBuildTag}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     
-                    sh "docker tag ${DOCKER_IMAGE_NAME}:${dockerBuildTag} ${dockerTargetTag}"
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG} ${dockerTargetTag}"
                 }
             }
         }
@@ -32,11 +32,10 @@ pipeline {
         stage('Push') {
             steps {
                 script {
-                    def dockerBuildTag = "nginx:v${BUILD_NUMBER}"
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${dockerBuildTag}"
-                    
-                    withCredentials([string(credentialsId: 'dockerhub', variable: 'DOCKER_HUB_CREDENTIALS')]) {
-                        sh "docker login -u 1core2 -p ${DOCKER_HUB_CREDENTIALS}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+            
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        sh "docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD"
                         sh "docker push ${dockerTargetTag}"
                         sh "docker logout"
                     }
