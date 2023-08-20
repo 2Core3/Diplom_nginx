@@ -28,6 +28,23 @@ pipeline {
             }
         }
         
+        stage('Run') {
+            steps {
+                script {
+                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+                    sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                script {
+                    sh "curl ${CONTAINER_IP}:80"
+                }
+            }
+        }
+        
         stage('Push') {
             steps {
                 script {
@@ -37,23 +54,6 @@ pipeline {
                         sh "docker push ${dockerTargetTag}"
                         sh "docker logout"
                     }
-                }
-            }
-        }
-        
-        stage('Run') {
-            steps {
-                script {
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
-                    sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag} gunicorn --bind 0.0.0.0:80 src.core.wsgi:app"
-                }
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                script {
-                    sh "curl ${CONTAINER_IP}:80"
                 }
             }
         }
