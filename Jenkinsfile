@@ -6,7 +6,7 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
-        CONTAINER_IP = sh(script: "docker inspect -f '{{.NetworkSettings.IPAddress}}' my-image", returnStdout: true).trim()
+        CONTAINER_IP = "192.168.64.2"
     }
     
     stages {
