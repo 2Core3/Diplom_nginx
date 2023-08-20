@@ -1,44 +1,45 @@
 pipeline {
     agent any
-
+    
     environment {
-        DOCKER_REPO = "1core2"
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
         DOCKER_IMAGE_NAME = "nginx"
-        DOCKER_TAG = "v${BUILD_NUMBER}"
-        DOCKER_IMAGE = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+        DOCKER_REPO = "1core2"
     }
-
+    
     stages {
-        stage('Build Docker Image') {
+        stage('Build') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                    def dockerBuildTag = "nginx:v${BUILD_NUMBER}"
+                    
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${dockerBuildTag} ."
                 }
             }
         }
-
-        stage('Login to Docker Hub') {
+        
+        stage('Tag') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login --username ${DOCKER_USERNAME} --password-stdin"
+                    def dockerBuildTag = "nginx:v${BUILD_NUMBER}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${dockerBuildTag}"
+                    
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:${dockerBuildTag} ${dockerTargetTag}"
+                }
+            }
+        }
+        
+        stage('Push') {
+            steps {
+                script {
+                    def dockerBuildTag = "nginx:v${BUILD_NUMBER}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${dockerBuildTag}"
+                    
+                    withCredentials([string(credentialsId: 'dockerhub', variable: 'DOCKER_HUB_CREDENTIALS')]) {
+                        sh "docker login -u 1core2 -p ${DOCKER_HUB_CREDENTIALS}"
+                        sh "docker push ${dockerTargetTag}"
+                        sh "docker logout"
                     }
-                }
-            }
-        }
-
-        stage('Tag Docker Image') {
-            steps {
-                script {
-                    sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${DOCKER_IMAGE}"
-                }
-            }
-        }
-
-        stage('Push to Docker Repository') {
-            steps {
-                script {
-                    sh "docker push ${DOCKER_IMAGE}"
                 }
             }
         }
