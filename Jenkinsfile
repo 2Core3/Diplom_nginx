@@ -40,7 +40,14 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh "curl ${CONTAINER_IP}:80"
+                    def expectedOutput = sh(script: "curl ${CONTAINER_IP}:80", returnStdout: true).trim()
+                    def indexHtmlContent = sh(script: "curl ${CONTAINER_IP}:80/index.html", returnStdout: true).trim()
+                    
+                    if (expectedOutput == indexHtmlContent) {
+                        echo "Output matches index.html content"
+                    } else {
+                        error "Output does not match index.html content"
+                    }
                 }
             }
         }
