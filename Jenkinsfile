@@ -12,7 +12,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    echo "BRANCH - ${env.BRANCH_NAME}"
+                    println("BRANCH - ${env.BRANCH_NAME}") 
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker build -t ${dockerBuildTag} ."
                 }
@@ -33,6 +33,13 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
+
+                    // Get the IP address of the running container
+                    def containerIP = sh(script: "docker inspect -f '{{.NetworkSettings.IPAddress}}' my-image", returnStdout: true).trim()
+                    echo "Container IP: ${containerIP}"
+                    
+                    // Set the container IP as an environment variable
+                    env.CONTAINER_IP = containerIP
                 }
             }
         }
@@ -40,12 +47,9 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    def containerId = sh(script: "docker ps -q -f name=jenkins-docker", returnStdout: true).trim()
-                    def containerIp = sh(script: "docker inspect -f '{{.NetworkSettings.IPAddress}}' $containerId", returnStdout: true).trim()
-                    
-                    sh "curl ${containerIp}:80"
-                    def expectedOutput = sh(script: "curl ${containerIp}:80", returnStdout: true).trim()
-                    def indexHtmlContent = sh(script: "curl ${containerIp}:80/index.html", returnStdout: true).trim()
+                    sh "curl ${env.CONTAINER_IP}:80"
+                    def expectedOutput = sh(script: "curl ${env.CONTAINER_IP}:80", returnStdout: true).trim()
+                    def indexHtmlContent = sh(script: "curl ${env.CONTAINER_IP}:80/index.html", returnStdout: true).trim()
                     
                     if (expectedOutput == indexHtmlContent) {
                         echo "Output matches index.html content"
