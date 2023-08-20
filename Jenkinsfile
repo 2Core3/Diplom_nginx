@@ -1,63 +1,55 @@
 pipeline {
-    agent { label 'master' }
+    agent any
+
     stages {
         stage('Check Files') {
             steps {
                 script {
                     def requiredFiles = ['Dockerfile', 'index.html', 'script_dockerhub.sh', 'test.sh']
+                    def missingFiles = []
+
                     for (file in requiredFiles) {
                         if (!fileExists(file)) {
-                            error("Required file not found: ${file}")
+                            missingFiles.add(file)
                         }
                     }
-                }
-            }
-        }
-        
-        stage('Docker Hub Script') {
-            steps {
-                script {
-                    def result = sh(script: './script_dockerhub.sh', returnStatus: true)
-                    if (result != 0) {
-                        error("Docker Hub script failed.")
+
+                    if (!missingFiles.isEmpty()) {
+                        error "Missing required files: ${missingFiles.join(', ')}"
                     }
                 }
             }
         }
-        
-        stage('Run Tests') {
+
+        stage('Run DockerHub Script') {
             steps {
                 script {
-                    def result = sh(script: './test.sh', returnStatus: true)
-                    if (result != 0) {
-                        error("Tests failed.")
+                    def scriptOutput = sh(script: './script_dockerhub.sh', returnStatus: true).trim()
+                    if (scriptOutput != 'ok') {
+                        error "Script script_dockerhub.sh failed with output: ${scriptOutput}"
                     }
                 }
             }
         }
-        
-        stage('Build Docker Image') {
+
+        stage('Run Test Script') {
             steps {
-                script {
-                    def version = sh(script: 'echo ${BUILD_NUMBER}', returnStdout: true).trim()
-                    sh(script: "docker build -t my-nginx:v${version} .")
-                }
+                sh './test.sh'
             }
         }
-        
-        stage('Run Docker Container') {
+
+        stage('Build and Deploy Docker Image') {
             steps {
                 script {
-                    sh(script: "docker run -d -p 80:80 my-nginx:v${BUILD_NUMBER}")
-                    sleep(time: 10, unit: 'SECONDS')  // Wait for container to start
-                }
-            }
-        }
-        
-        stage('Push Image') {
-            steps {
-                script {
-                    sh(script: "./push.sh my-nginx:v${BUILD_NUMBER}")
+                    def version = sh(script: 'echo $BUILD_NUMBER', returnStdout: true).trim()
+                    def imageName = "my-nginx:v${version}"
+
+                    sh "docker build -t ${imageName} ."
+                    sh "docker save -o ${imageName}.tar ${imageName}"
+                    sshagent(credentials: ['vagrant-ssh-credentials-id']) {
+                        sh "scp -o StrictHostKeyChecking=no ${imageName}.tar vagrant@192.168.56.106:/home/vagrant/"
+                        sh "sshpass -p 'vagrant' ssh vagrant@192.168.56.106 'docker load -i /home/vagrant/${imageName}.tar'"
+                    }
                 }
             }
         }
