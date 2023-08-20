@@ -9,7 +9,7 @@ RUN apt-get update && \
     echo "daemon off;" >> /etc/nginx/nginx.conf && \
     rm -f /usr/share/nginx/html/index.html
     
-#COPY index.html /var/www/html/
+COPY index.html /var/www/html/
 
 EXPOSE $NGINX_PORT
 
