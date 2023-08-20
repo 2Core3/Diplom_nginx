@@ -6,14 +6,13 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
-        CONTAINER_IP = "172.31.0.2"
     }
     
     stages {
         stage('Build') {
             steps {
                 script {
-                    echo $GIT_BRANCH
+                    echo "BRANCH - ${env.BRANCH_NAME}"
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker build -t ${dockerBuildTag} ."
                 }
@@ -41,9 +40,12 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh "curl ${CONTAINER_IP}:80"
-                    def expectedOutput = sh(script: "curl ${CONTAINER_IP}:80", returnStdout: true).trim()
-                    def indexHtmlContent = sh(script: "curl ${CONTAINER_IP}:80/index.html", returnStdout: true).trim()
+                    def containerId = sh(script: "docker ps -q -f name=jenkins-docker", returnStdout: true).trim()
+                    def containerIp = sh(script: "docker inspect -f '{{.NetworkSettings.IPAddress}}' $containerId", returnStdout: true).trim()
+                    
+                    sh "curl ${containerIp}:80"
+                    def expectedOutput = sh(script: "curl ${containerIp}:80", returnStdout: true).trim()
+                    def indexHtmlContent = sh(script: "curl ${containerIp}:80/index.html", returnStdout: true).trim()
                     
                     if (expectedOutput == indexHtmlContent) {
                         echo "Output matches index.html content"
