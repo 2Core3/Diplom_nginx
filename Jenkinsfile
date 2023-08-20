@@ -1,5 +1,5 @@
 pipeline {
-    agent { label "jenkins-agent" }
+    agent { label "docker" }
     
     stages {
         stage('Check Files') {
