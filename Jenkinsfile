@@ -6,7 +6,7 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
-        CONTAINER_IP = "192.168.64.2"
+        CONTAINER_IP = credentials('ip_docker')
     }
     
     stages {
@@ -34,7 +34,6 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
-                    sh "curl http://my-image:80"
                     sh "curl curl localhost:80"
                 }
             }
