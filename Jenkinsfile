@@ -7,7 +7,6 @@ pipeline {
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
         CONTAINER_IP = credentials('ip_docker')
-
     }
     
     stages {
