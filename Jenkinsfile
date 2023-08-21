@@ -6,7 +6,6 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
-        CONTAINER_IP = credentials('ip_docker')
     }
     
     stages {
@@ -32,6 +31,15 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
+                }
+            }
+        }
+        
+        stage('Get Container IP') {
+            steps {
+                script {
+                    def originalIP = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim()
+                    CONTAINER_IP = originalIP.replaceAll(/(\d+\.\d+\.\d+\.)(\d+)/, '$12')
                 }
             }
         }
