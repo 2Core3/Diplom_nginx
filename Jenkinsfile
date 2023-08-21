@@ -34,6 +34,8 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
+                    sh "curl http://my-image:80"
+                    sh "curl curl localhost:80"
                 }
             }
         }
@@ -41,8 +43,6 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh "curl http://my-image:80"
-                    sh "curl http://localhost:80"
                     sh "curl ${CONTAINER_IP}:80"
                     def expectedOutput = sh(script: "curl ${CONTAINER_IP}:80", returnStdout: true).trim()
                     def indexHtmlContent = sh(script: "curl ${CONTAINER_IP}:80/index.html", returnStdout: true).trim()
