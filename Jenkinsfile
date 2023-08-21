@@ -6,7 +6,8 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
-        CONTAINER_IP = "192.168.64.2"
+        CONTAINER_IP = credentials('ip_docker')
+
     }
     
     stages {
