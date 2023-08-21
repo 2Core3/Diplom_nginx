@@ -10,19 +10,17 @@ pipeline {
     }
     
     stages {
-        stage('Build') {
+        stage('Build and Tag') {
             steps {
                 script {
-                    println("BRANCH - ${env.BRANCH_NAME}") 
+                    println("BRANCH - ${env.BRANCH_NAME}")
+                    // Clean up the previous container if it exists
+                    sh "docker stop my-image || true"
+                    sh "docker rm my-image || true"
+                    
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker build -t ${dockerBuildTag} ."
-                }
-            }
-        }
-        
-        stage('Tag') {
-            steps {
-                script {
+                    
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG} ${dockerTargetTag}"
                 }
@@ -73,8 +71,8 @@ pipeline {
         stage('Clean') {
             steps {
                 script {
-                    sh "docker stop my-image"
-                    sh "docker rm my-image"
+                    sh "docker stop my-image || true"
+                    sh "docker rm my-image || true"
                 }
             }
         }
@@ -82,11 +80,11 @@ pipeline {
     
     post {
         failure {
-            sh "docker stop my-image"
-            sh "docker rm my-image"
+            sh "docker stop my-image || true"
+            sh "docker rm my-image || true"
         }
         always {
-            sh "docker image rm ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+            sh "docker image rm ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG} || true"
         }
     }
 }
