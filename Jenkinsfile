@@ -6,6 +6,7 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
+        CONTAINER_IP = "192.168.64.2"
     }
     
     stages {
@@ -33,13 +34,6 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
-
-                    // Get the IP address of the running container
-                    def containerIP = sh(script: "docker inspect -f '{{.NetworkSettings.IPAddress}}' my-image", returnStdout: true).trim()
-                    echo "Container IP: ${containerIP}"
-                    
-                    // Set the container IP as an environment variable
-                    env.CONTAINER_IP = containerIP
                 }
             }
         }
@@ -47,9 +41,11 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh "curl ${env.CONTAINER_IP}:80"
-                    def expectedOutput = sh(script: "curl ${env.CONTAINER_IP}:80", returnStdout: true).trim()
-                    def indexHtmlContent = sh(script: "curl ${env.CONTAINER_IP}:80/index.html", returnStdout: true).trim()
+                    sh "curl http://my-image:80"
+                    sh "curl http://localhost:80"
+                    sh "curl ${CONTAINER_IP}:80"
+                    def expectedOutput = sh(script: "curl ${CONTAINER_IP}:80", returnStdout: true).trim()
+                    def indexHtmlContent = sh(script: "curl ${CONTAINER_IP}:80/index.html", returnStdout: true).trim()
                     
                     if (expectedOutput == indexHtmlContent) {
                         echo "Output matches index.html content"
