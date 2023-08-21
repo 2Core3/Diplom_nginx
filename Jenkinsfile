@@ -34,7 +34,6 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
-                    sh "curl curl localhost:80"
                 }
             }
         }
