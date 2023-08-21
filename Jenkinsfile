@@ -14,7 +14,7 @@ pipeline {
             steps {
                 script {
                     println("BRANCH - ${env.BRANCH_NAME}")
-                    // Clean up the previous container if it exists
+                    
                     sh "docker stop my-image || true"
                     sh "docker rm my-image || true"
                     
