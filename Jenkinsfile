@@ -14,8 +14,7 @@ pipeline {
                 script {
                     println("BRANCH - ${env.BRANCH_NAME}")
                     
-                    sh "docker stop my-image || true"
-                    sh "docker rm my-image || true"
+                    sh "docker rm -f my-image || true"
                     
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     sh "docker build -t ${dockerBuildTag} ."
