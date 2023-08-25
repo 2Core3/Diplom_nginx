@@ -89,7 +89,7 @@ pipeline {
             script {
                 def message = "*${env.JOB_NAME}* : Pipeline Failed"
                 withCredentials([usernamePassword(credentialsId: 'telegram_alert', usernameVariable: 'CHAT_ID', passwordVariable: 'API_TOKEN')]) {
-                sh """ curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}' """
+                sh """ curl -s -X POST https://api.telegram.org/bot$API_TOKEN/sendMessage -d chat_id=$CHAT_ID -d parse_mode=markdown -d text='${message}' """
                 }
             }
         }
@@ -97,7 +97,7 @@ pipeline {
             script {
                 def message = "*${env.JOB_NAME}* : Pipeline Succeeded"
                 withCredentials([usernamePassword(credentialsId: 'telegram_alert', usernameVariable: 'CHAT_ID', passwordVariable: 'API_TOKEN')]) {
-                sh """ curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}' """"
+                sh """ curl -s -X POST https://api.telegram.org/bot$API_TOKEN/sendMessage -d chat_id=$CHAT_ID -d parse_mode=markdown -d text='${message}' """
                 }
             }
         } 
