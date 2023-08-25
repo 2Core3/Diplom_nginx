@@ -6,8 +6,7 @@ pipeline {
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
-        API_TOKEN = credentials('telegram_alert').password
-        CHAT_ID = credentials('telegram_alert').username
+        TELEGRAM_ALERT = credentials('telegram_alert')
     }
     
     stages {
@@ -89,13 +88,17 @@ pipeline {
         failure {
             script {
                 def message = "*${env.JOB_NAME}* : Pipeline Failed"
-                sh """curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}'"""
+                withCredentials([usernamePassword(credentialsId: 'telegram_alert', usernameVariable: 'CHAT_ID', passwordVariable: 'API_TOKEN')]) {
+                sh "curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}'"
+                }
             }
         }
         success {
             script {
                 def message = "*${env.JOB_NAME}* : Pipeline Succeeded"
-                sh """curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}'"""
+                withCredentials([usernamePassword(credentialsId: 'telegram_alert', usernameVariable: 'CHAT_ID', passwordVariable: 'API_TOKEN')]) {
+                sh "curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}'"
+                }
             }
         } 
     }
