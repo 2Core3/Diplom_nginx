@@ -57,7 +57,6 @@ pipeline {
         }
         
         stage('Push') {
-            }
             steps {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
