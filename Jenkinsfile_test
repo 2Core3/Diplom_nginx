@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
@@ -14,13 +13,11 @@ pipeline {
                 script {
                     println("BRANCH - ${env.BRANCH_NAME}")
                     
-                    sh "docker rm -f my-image || true"
-                    
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
-                    sh "docker build -t ${dockerBuildTag} ."
-                    
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
-                    sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG} ${dockerTargetTag}"
+                    
+                    sh "docker rm -f my-image || true"
+                    sh "docker image build -t ${dockerBuildTag} -t ${dockerTargetTag} ."
                 }
             }
         }
@@ -87,11 +84,24 @@ pipeline {
     
     post {
         failure {
-            sh "docker stop my-image || true"
-            sh "docker rm my-image || true"
+            script {
+                def message = "*${env.JOB_NAME}* : Pipeline Failed. BRANCH - Test."
+                withCredentials([string(credentialsId: 'telegram_id', variable: 'CHAT_ID'), string(credentialsId: 'telegram_api', variable: 'API_TOKEN')]) {
+                    sh """
+                    curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}' 
+                    """
+                }
+            }
         }
-        always {
-            sh "docker image rm ${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG} || true"
-        }
+        success {
+            script {
+                def message = "*${env.JOB_NAME}* : Pipeline Succeeded. BRANCH - Test."
+                withCredentials([string(credentialsId: 'telegram_id', variable: 'CHAT_ID'), string(credentialsId: 'telegram_api', variable: 'API_TOKEN')]) {
+                    sh """
+                    curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}' 
+                    """
+                }
+            }
+        } 
     }
 }
