@@ -11,7 +11,6 @@ pipeline {
         stage('Build and Tag') {
             steps {
                 script {
-                    println("BRANCH - ${env.BRANCH_NAME}")
                     
                     def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
                     def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
