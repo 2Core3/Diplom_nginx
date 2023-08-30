@@ -2,6 +2,8 @@ pipeline {
     agent any
     
     environment {
+        AWS_ACCESS_KEY_ID = credentials('accessKey')
+        AWS_SECRET_ACCESS_KEY = credentials('secretKey')
         DOCKER_IMAGE_NAME = "nginx"
         DOCKER_REPO = "1core2"
         DOCKER_BUILD_TAG = "v${BUILD_NUMBER}"
