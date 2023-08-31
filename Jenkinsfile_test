@@ -2,21 +2,20 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_IMAGE_NAME = "${env.JOB_NAME.toLowerCase()}"
         DOCKER_REPO = "1core2"
-        DOCKER_BUILD_TAG = "latest"
     }
     
     stages {
         stage('Build and Tag') {
             steps {
                 script {
-                    
-                    def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+                    def dockerJobTag = "${env.JOB_NAME.toLowerCase()}"
+                    def dockerBuildTag = "${dockerJobTag}:${BUILD_ID}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${dockerJobTag}:${BUILD_ID}"
                     
                     sh "docker rm -f my-image || true"
-                    sh "docker image build -t ${dockerBuildTag} -t ${dockerTargetTag} ."
+                    sh "docker image build -t ${dockerBuildTag} ."
+                    sh "docker tag ${dockerBuildTag} ${dockerTargetTag}"
                 }
             }
         }
@@ -55,10 +54,15 @@ pipeline {
             }
             steps {
                 script {
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+                    def dockerJobTag = "${env.JOB_NAME.toLowerCase()}"
+                    def dockerBuildTag = "${dockerJobTag}:${BUILD_ID}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${dockerJobTag}:${BUILD_ID}"
+                    
                     withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                         sh "docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD"
                         sh "docker push ${dockerTargetTag}"
+                        sh "docker tag ${dockerTargetTag} ${DOCKER_REPO}/${dockerJobTag}:latest"
+                        sh "docker push ${DOCKER_REPO}/${dockerJobTag}:latest"
                         sh "docker logout"
                     }
                 }
