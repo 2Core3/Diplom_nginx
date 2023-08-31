@@ -2,21 +2,20 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_IMAGE_NAME = "${env.JOB_NAME.toLowerCase()}"
         DOCKER_REPO = "1core2"
-        DOCKER_BUILD_TAG = "latest"
     }
     
     stages {
         stage('Build and Tag') {
             steps {
                 script {
-                    
-                    def dockerBuildTag = "${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+                    def dockerJobTag = "${env.JOB_NAME.toLowerCase()}"
+                    def dockerBuildTag = "${dockerJobTag}:${BUILD_ID}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${dockerJobTag}:${BUILD_ID}"
                     
                     sh "docker rm -f my-image || true"
-                    sh "docker image build -t ${dockerBuildTag} -t ${dockerTargetTag} ."
+                    sh "docker image build -t ${dockerBuildTag} ."
+                    sh "docker tag ${dockerBuildTag} ${dockerTargetTag}"
                 }
             }
         }
@@ -24,11 +23,13 @@ pipeline {
         stage('Run') {
             steps {
                 script {
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${env.JOB_NAME.toLowerCase()}:${BUILD_ID}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
                     
                     def originalIP = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim()
-                    CONTAINER_IP = originalIP.replaceAll(/(\d+\.\d+\.\d+\.)(\d+)/, '$12')
+                    def CONTAINER_IP = originalIP.replaceAll(/(\d+\.\d+\.\d+\.)(\d+)/, '$1' + '2')
+                    
+                    env.CONTAINER_IP = CONTAINER_IP
                 }
             }
         }
@@ -36,9 +37,9 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh "curl ${CONTAINER_IP}:80"
-                    def expectedOutput = sh(script: "curl ${CONTAINER_IP}:80", returnStdout: true).trim()
-                    def indexHtmlContent = sh(script: "curl ${CONTAINER_IP}:80/index.html", returnStdout: true).trim()
+                    sh "curl ${env.CONTAINER_IP}:80"
+                    def expectedOutput = sh(script: "curl ${env.CONTAINER_IP}:80", returnStdout: true).trim()
+                    def indexHtmlContent = sh(script: "curl ${env.CONTAINER_IP}:80/index.html", returnStdout: true).trim()
                     
                     if (expectedOutput == indexHtmlContent) {
                         echo "Output matches index.html content"
@@ -55,10 +56,15 @@ pipeline {
             }
             steps {
                 script {
-                    def dockerTargetTag = "${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_BUILD_TAG}"
+                    def dockerJobTag = "${env.JOB_NAME.toLowerCase()}"
+                    def dockerBuildTag = "${dockerJobTag}:${BUILD_ID}"
+                    def dockerTargetTag = "${DOCKER_REPO}/${dockerJobTag}:${BUILD_ID}"
+                    
                     withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                         sh "docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD"
                         sh "docker push ${dockerTargetTag}"
+                        sh "docker tag ${dockerTargetTag} ${DOCKER_REPO}/${dockerJobTag}:latest"
+                        sh "docker push ${DOCKER_REPO}/${dockerJobTag}:latest"
                         sh "docker logout"
                     }
                 }
