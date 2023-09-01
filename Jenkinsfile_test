@@ -111,7 +111,7 @@ pipeline {
     post {
         failure {
             script {
-                def message = "*${env.JOB_NAME}* : Pipeline Failed. BRANCH - Test."
+                def message = "*${env.JOB_NAME}* : Pipeline Failed."
                 withCredentials([string(credentialsId: 'telegram_id', variable: 'CHAT_ID'), string(credentialsId: 'telegram_api', variable: 'API_TOKEN')]) {
                     sh """
                     curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}' 
@@ -121,7 +121,7 @@ pipeline {
         }
         success {
             script {
-                def message = "*${env.JOB_NAME}* : Pipeline Succeeded. BRANCH - Test."
+                def message = "*${env.JOB_NAME}* : Pipeline Succeeded."
                 withCredentials([string(credentialsId: 'telegram_id', variable: 'CHAT_ID'), string(credentialsId: 'telegram_api', variable: 'API_TOKEN')]) {
                     sh """
                     curl -s -X POST https://api.telegram.org/bot${API_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=markdown -d text='${message}' 
