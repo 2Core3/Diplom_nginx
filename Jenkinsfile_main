@@ -6,6 +6,8 @@ pipeline {
     }
     
     stages {
+        
+        
         stage('Build and Tag') {
             steps {
                 script {
@@ -25,11 +27,13 @@ pipeline {
                 script {
                     def dockerTargetTag = "${DOCKER_REPO}/${env.JOB_NAME.toLowerCase()}:${BUILD_ID}"
                     sh "docker run -d -p 80:80 --name my-image ${dockerTargetTag}"
-                    
+
                     def originalIP = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim()
                     def CONTAINER_IP = originalIP.replaceAll(/(\d+\.\d+\.\d+\.)(\d+)/, '$1' + '2')
-                    
-                    env.CONTAINER_IP = CONTAINER_IP
+                    def HOST_IP = originalIP.replaceAll(/(\d+\.\d+\.\d+\.)(\d+)/, '$1' + '1')
+            
+                    env.HOST_IP = HOST_IP
+                    env.CONTAINER_IP = CONTAINER_IP        
                 }
             }
         }
@@ -63,6 +67,22 @@ pipeline {
                         sh "docker tag ${dockerTargetTag} ${DOCKER_REPO}/${dockerJobTag}:latest"
                         sh "docker push ${DOCKER_REPO}/${dockerJobTag}:latest"
                         sh "docker logout"
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'aws_ssh', keyFileVariable: 'SSH_KEY')]) {
+                        def catOutput = sh(script: """
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@${HOST_IP} 'cat /home/ubuntu/ip_server_nginx'
+                        """, returnStdout: true).trim()
+                        env.IP = catOutput
+                        sh """
+                        ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@${env.IP} 'bash /home/ubuntu/scripts_rm_and_push.sh'
+                        """
                     }
                 }
             }
