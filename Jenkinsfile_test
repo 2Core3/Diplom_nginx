@@ -77,7 +77,7 @@ pipeline {
             }
         }
         
-        stage('deploy') {
+        stage('Deploy') {
             when {
                 expression {
                     return env.BRANCH_NAME == 'main'

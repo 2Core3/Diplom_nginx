@@ -72,7 +72,7 @@ pipeline {
             }
         }
         
-        stage('deploy') {
+        stage('Deploy') {
             steps {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: 'aws_ssh', keyFileVariable: 'SSH_KEY')]) {
